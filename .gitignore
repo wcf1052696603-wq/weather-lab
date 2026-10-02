@@ -1,0 +1,18 @@
+# 抓取过程中的中间产物（断点续传缓存），不入库
+data/climate-partial-power.json
+
+# 构建/核对过程产生的临时文件
+data/_review.txt
+data/_test_output.html
+
+# 仅用于探测 API 行为的一次性脚本
+scripts/probe_alt.py
+scripts/probe_cors.py
+scripts/probe_cors2.py
+scripts/probe_limit.py
+scripts/probe_units.py
+
+# 运行环境
+__pycache__/
+*.pyc
+.DS_Store

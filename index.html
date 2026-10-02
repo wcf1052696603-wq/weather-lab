@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>全年天气对比 · Weather Lab</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">☁</div>
+    <div>
+      <div class="brand-title">全年天气对比</div>
+      <div class="brand-sub">Weather Lab</div>
+    </div>
+  </div>
+
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input id="search" class="search-input" type="text" autocomplete="off"
+           placeholder="搜索任意城市（中文/拼音/英文）后回车，全球均可加入…">
+    <button id="searchClear" class="search-clear">✕</button>
+    <div id="searchResults" class="search-results"></div>
+  </div>
+
+  <div class="topbar-meta">
+    <span class="pill" id="dataPill">数据加载中…</span>
+    <button class="btn btn-sm" id="btnHelp">口径说明</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ================= 侧栏 ================= -->
+  <aside class="sidebar">
+    <div class="side-block">
+      <div class="side-title">
+        <span>对比清单 <span id="selCount" class="pill" style="padding:1px 7px">0/6</span></span>
+        <button class="btn btn-sm btn-ghost" id="btnClearSel">清空</button>
+      </div>
+      <div class="chips" id="chips"><span class="chips-empty">从下方城市库中选择，或搜索任意城市</span></div>
+      <div class="footer-note" id="primaryHint" style="display:none">
+        ★ 标记为主城市（“全年概览”展示对象），点击清单中的城市可切换。
+      </div>
+    </div>
+
+    <div class="side-block">
+      <div class="region-tabs" id="regionTabs"></div>
+    </div>
+
+    <div class="city-scroll" id="cityList"></div>
+  </aside>
+
+  <!-- ================= 主内容 ================= -->
+  <main class="main">
+    <nav class="tabs" id="tabs">
+      <button data-tab="overview" class="active">全年概览</button>
+      <button data-tab="compare">多城对比</button>
+      <button data-tab="live">宜居分析</button>
+      <button data-tab="table">数据表</button>
+    </nav>
+
+    <!-- 全年概览 -->
+    <section class="panel active" id="panel-overview">
+      <div id="ovEmpty" class="empty">
+        <b>还没有选择城市</b>请在左侧城市库中点击城市（可多选），或直接搜索任意城市加入对比。
+      </div>
+      <div id="ovBody" style="display:none">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title" id="ovTitle">—</div>
+            <div class="card-note" id="ovSub"></div>
+          </div>
+          <div class="metrics" id="ovMetrics"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">全年气温曲线</div>
+            <div class="card-note">月度常年值 · 阴影为平均最低～最高区间</div>
+          </div>
+          <div class="chart-wrap h300"><canvas id="chartTemp"></canvas></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">降水与湿度</div>
+              <div class="card-note">柱=月降水 · 线=平均相对湿度</div>
+            </div>
+            <div class="chart-wrap h260"><canvas id="chartRain"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">太阳辐射与风速</div>
+              <div class="card-note">柱=月均辐射 · 线=平均风速</div>
+            </div>
+            <div class="chart-wrap h260"><canvas id="chartSun"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">体感舒适度日历</div>
+            <div class="card-note">综合气温与湿度 · 每格显示当月体感等级</div>
+          </div>
+          <div class="card-desc" id="ovStripDesc"></div>
+          <div class="strip" id="ovStrip"></div>
+          <div class="legend-row">
+            <span><i style="background:#0f7b6c"></i>舒适 20~25℃</span>
+            <span><i style="background:#3f9d8f"></i>较舒适 15~20℃</span>
+            <span><i style="background:#c9a227"></i>偏热 25~28℃</span>
+            <span><i style="background:#c2691a"></i>炎热 28~32℃</span>
+            <span><i style="background:#a33b2f"></i>酷热 ≥32℃</span>
+            <span><i style="background:#6b8fa8"></i>偏凉 8~15℃</span>
+            <span><i style="background:#4f6f92"></i>寒冷 0~8℃</span>
+            <span><i style="background:#3b5a86"></i>严寒 &lt;0℃</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">极端天气与出行风险</div>
+            <div class="card-note">常年统计 · 见「口径说明」</div></div>
+          <div class="metrics" id="ovRisk"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 多城对比 -->
+    <section class="panel" id="panel-compare">
+      <div id="cmpEmpty" class="empty"><b>对比需要至少 2 个城市</b>在左侧再选一个城市即可开始对比。</div>
+      <div id="cmpBody" style="display:none">
+        <div class="card">
+          <div class="card-head"><div class="card-title">全年气温对比</div>
+            <div class="card-note">月平均气温 · 虚线为各城市平均最高/最低</div></div>
+          <div class="chart-wrap h300"><canvas id="chartCmpTemp"></canvas></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><div class="card-title">月降水量对比</div><div class="card-note">mm/月</div></div>
+            <div class="chart-wrap h260"><canvas id="chartCmpRain"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">月平均湿度对比</div><div class="card-note">%</div></div>
+            <div class="chart-wrap h260"><canvas id="chartCmpRh"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">年度指标对比</div>
+            <div class="card-note" id="cmpBaseNote"></div></div>
+          <div class="table-wrap" id="cmpTable"></div>
+          <div class="footer-note">
+            差值列以主城市（★）为基准：<span style="color:#b42318">红色</span>表示该项数值更高，
+            <span style="color:#067647">绿色</span>表示更低；「宜居度」与「越优」列则已按“好坏方向”着色。
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">月度差值表</div>
+            <div class="card-note" id="cmpDiffNote"></div></div>
+          <div class="table-wrap" id="cmpMonthTable"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 宜居分析 -->
+    <section class="panel" id="panel-live">
+      <div id="livEmpty" class="empty"><b>先选择城市</b>选择后会给出宜居参考分、分项得分与居住建议。</div>
+      <div id="livBody" style="display:none">
+        <div class="card">
+          <div class="card-head"><div class="card-title">偏好权重</div>
+            <div class="card-note">拖动以调整评分口径，结果实时更新</div></div>
+          <div class="pref-row" id="prefs"></div>
+        </div>
+        <div id="livCards"></div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">气候相似城市</div>
+            <div class="card-note">基于 12 个月气温/湿度/降水向量计算</div></div>
+          <div id="livSimilar"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 数据表 -->
+    <section class="panel" id="panel-table">
+      <div id="tbEmpty" class="empty"><b>暂无数据</b>请先选择城市。</div>
+      <div id="tbBody" style="display:none">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">月度气候明细</div>
+            <button class="btn btn-sm" id="btnCsv">导出 CSV</button>
+          </div>
+          <div class="card-desc" id="tbDesc"></div>
+          <div class="table-wrap" id="tbTable"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer-note" id="footerNote"></div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="loading-mask" id="loading">
+  <div>
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">正在获取气候数据…</div>
+  </div>
+</div>
+
+<script src="vendor/chart.umd.min.js"></script>
+<script src="data/climate-data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
